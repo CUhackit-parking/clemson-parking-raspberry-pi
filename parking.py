@@ -9,6 +9,10 @@ import requests
 url = "https://getpantry.cloud/apiv1/pantry/b3e96063-a141-4c97-8deb-ca7ae6b8fe83/basket/parking1"
 header = {"Content-Type": "application/json"}
 
+increment_url = "https://api.clemsonparking.tech/lot/C-16/increment/{}"
+decrement_url = "https://api.clemsonparking.tech/lot/C-16/decrement"
+
+get_item = "https://api.clemsonparking.tech/lot/C-16"
 def periodic_sync():
     sync()
     threading.Timer(60,periodic_sync).start()
@@ -31,14 +35,20 @@ def sync():
     global changing_cars
     global cars
     try:
-        response = requests.get(url, headers=header, data=json.dumps(readings)).json()
         
-        cars = response["Count"]
-        readings["Count"] = cars + changing_cars
-        cars = readings["Count"]
-        response = requests.put(url, headers=header, data=json.dumps(readings))
-        if(response.status_code == 200):
+        print(changing_cars)
+        
+        
+        
+        response = requests.patch(increment_url.format(changing_cars))
+        if response.status_code ==  200:
             changing_cars = 0
+        
+        response = requests.get(get_item).json()
+        cars = response["count"]
+        print(cars)
+        print(changing_cars)
+        print()
         
     except Exception as e:
         print(e)
@@ -63,18 +73,28 @@ while(True):
         sync()
         
         
-        lot_remain = readings
+        lot_remain = requests.get(get_item).json()
         
-
-        print(lot_remain)
+        lot_remain = lot_remain["capacity"]
         
-        lot_number = lot_remain["LotSize"]
         
-        spots_remaining = lot_number - cars - changing_cars
+        
+        
+        
+        
+        
+        
+        
+        spots_remaining = lot_remain - cars - changing_cars
         
         if spots_remaining <= 0:
             grove_display.setText("FULL")
+            grove_display.setRGB(255,0,0)
         else:
+            if(spots_remaining) < 15 and spots_remaining >0:
+                grove_display.setRGB(255,255,0)
+            else:
+                grove_display.setRGB(0,255,0)
             grove_display.setText("Spots remaining: {}".format(spots_remaining))
         
         
