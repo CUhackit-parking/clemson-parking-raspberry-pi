@@ -3,13 +3,15 @@ import RPi.GPIO as GPIO
 import time
 from time import sleep
 import grove_display
-
+import time, threading
 import requests
 
 url = "https://getpantry.cloud/apiv1/pantry/b3e96063-a141-4c97-8deb-ca7ae6b8fe83/basket/parking1"
 header = {"Content-Type": "application/json"}
 
-
+def periodic_sync():
+    sync()
+    threading.Timer(60,periodic_sync).start()
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
@@ -68,7 +70,7 @@ while(True):
         
         lot_number = lot_remain["LotSize"]
         
-        spots_remaining = lot_number - cars
+        spots_remaining = lot_number - cars - changing_cars
         
         if spots_remaining <= 0:
             grove_display.setText("FULL")
